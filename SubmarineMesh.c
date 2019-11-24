@@ -22,6 +22,12 @@ SubmarineMesh newSubmarine() {
 	submarineMesh.mat_diffuse[3] = submarine_mat_diffuse[3];
 
 	submarineMesh.mat_shininess[0] = submarine_mat_shininess[0];
+
+	// custom submarine properties
+
+
+
+
 	return submarineMesh;
 }
 

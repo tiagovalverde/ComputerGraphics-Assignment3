@@ -265,3 +265,149 @@ void ComputeNormalsQM(QuadMesh* qm)
 		}
 	}
 }
+
+// methods that renders the metaballs created in the quadmesh
+void computeMetaballsIntoQuadMesh(struct Metaball* list, int numMetaballs, QuadMesh* qm) {
+
+	for (int i = 0; i < qm->maxMeshSize + 1; i++) {
+		for (int j = 0; j < qm->maxMeshSize + 1; j++) {
+
+			int verticeIndex = i * (qm->maxMeshSize + 1) + j;
+			Vector3D pos = qm->vertices[verticeIndex].position;
+			qm->vertices[verticeIndex].position.y = 0; //resets y position to 0
+
+			for (int k = 0; k <= numMetaballs; k++) {
+
+				// add noise to the blobs to look more realistic
+				float r = addRandomNoise();
+				float distance = powf(list[k].position.x - pos.x, 2) +
+					powf(list[k].position.z - pos.z, 2);
+
+				// f(X,Z) = SUM_k ( b_x * e^(-a_k*r_k^2))
+				float b_x = list[k].height * r;
+				float a_k = -list[k].width / r;
+
+				qm->vertices[verticeIndex].position.y += (b_x * (expf(a_k * distance)));
+			}
+		}
+	}
+	ComputeNormalsQM(qm);
+}
+
+float addRandomNoise() {
+	// increasing will reduce noise
+	// decreasing will increase noise
+	int NOISE_DENOMINATOR = 15;
+	return 1 + (float)(rand()) / (float)(RAND_MAX) / NOISE_DENOMINATOR;
+}
+
+Metaballs initializeMetaballs() {
+	Metaballs staticMetaballs;
+
+	
+	staticMetaballs.list[0].position.x = -6.10036373;
+	staticMetaballs.list[0].position.y = -0.0298475642;
+	staticMetaballs.list[0].position.z = -4.35881853;
+	staticMetaballs.list[0].width = 0.0999999642;
+	staticMetaballs.list[0].height = 0.700000107;
+
+	staticMetaballs.list[1].position.x = -5.73481846;
+	staticMetaballs.list[1].position.y = 0.598784626;
+	staticMetaballs.list[1].position.z = -3.12270236;
+	staticMetaballs.list[1].width = 0.550000012;
+	staticMetaballs.list[1].height = 0.700000107;
+
+	staticMetaballs.list[2].position.x = -4.82809687;
+	staticMetaballs.list[2].position.y = 0.162341326;
+	staticMetaballs.list[2].position.z = -7.86406469;
+	staticMetaballs.list[2].width = 0.550000012;
+	staticMetaballs.list[2].height = 0.800000131;
+
+	staticMetaballs.list[3].position.x = -3.05935907;
+	staticMetaballs.list[3].position.y = 0.579775393;
+	staticMetaballs.list[3].position.z = -4.06926680;
+	staticMetaballs.list[3].width = 0.550000012;
+	staticMetaballs.list[3].height = 0.700000107;
+
+	staticMetaballs.list[4].position.x = 1.00884151;
+	staticMetaballs.list[4].position.y = 0.624996722;
+	staticMetaballs.list[4].position.z = -4.36985540;
+	staticMetaballs.list[4].width = 0.550000012;
+	staticMetaballs.list[4].height = 0.800000131;
+
+	staticMetaballs.list[5].position.x = -2.58651757;
+	staticMetaballs.list[5].position.y = -2.19709992;
+	staticMetaballs.list[5].position.z = -16.8543148;
+	staticMetaballs.list[5].width = 0.550000012;
+	staticMetaballs.list[5].height = 0.800000131;
+
+	staticMetaballs.list[6].position.x = -1.96070910;
+	staticMetaballs.list[6].position.y = 0.0918585211;
+	staticMetaballs.list[6].position.z = -6.27612925;
+	staticMetaballs.list[6].width = 0.299999952;
+	staticMetaballs.list[6].height = 2.10000014;
+
+	staticMetaballs.list[7].position.x = 1.25525820;
+	staticMetaballs.list[7].position.y = -0.0248816386;
+	staticMetaballs.list[7].position.z = -0.228124738;
+	staticMetaballs.list[7].width = 0.0999999642;
+	staticMetaballs.list[7].height = -1.00000012;
+
+	staticMetaballs.list[8].position.x = 6.47222662;
+	staticMetaballs.list[8].position.y = -0.0351287164;
+	staticMetaballs.list[8].position.z = -5.50770903;
+	staticMetaballs.list[8].width = 0.299999952;
+	staticMetaballs.list[8].height = 1.70000017;
+
+	staticMetaballs.list[9].position.x = 6.72157097;
+	staticMetaballs.list[9].position.y = -0.0782028064;
+	staticMetaballs.list[9].position.z = -0.870674133;
+	staticMetaballs.list[9].width = 0.299999952;
+	staticMetaballs.list[9].height = 1.50000012;
+
+	staticMetaballs.list[10].position.x = 6.07216978;
+	staticMetaballs.list[10].position.y = -0.0336616710;
+	staticMetaballs.list[10].position.z = 4.34948826;
+	staticMetaballs.list[10].width = 0.299999952;
+	staticMetaballs.list[10].height = 0.399999917;
+
+	staticMetaballs.list[11].position.x = 6.48080206;
+	staticMetaballs.list[11].position.y = 0.174273953;
+	staticMetaballs.list[11].position.z = 2.72683382;
+	staticMetaballs.list[11].width = 0.299999952;
+	staticMetaballs.list[11].height = 0.599999905;
+
+	staticMetaballs.list[12].position.x = -1.53580260;
+	staticMetaballs.list[12].position.y = -0.00855677575;
+	staticMetaballs.list[12].position.z = 1.32467699;
+	staticMetaballs.list[12].width = 0.299999952;
+	staticMetaballs.list[12].height = 0.599999905;
+
+	staticMetaballs.list[13].position.x = -2.35522842;
+	staticMetaballs.list[13].position.y = 0.231828406;
+	staticMetaballs.list[13].position.z = 2.21690130;
+	staticMetaballs.list[13].width = 0.299999952;
+	staticMetaballs.list[13].height = 0.599999905;
+
+	staticMetaballs.list[14].position.x = -5.55137205;
+	staticMetaballs.list[14].position.y = 0.0300020706;
+	staticMetaballs.list[14].position.z = 0.993400216;
+	staticMetaballs.list[14].width = 0.299999952;
+	staticMetaballs.list[14].height = 1.60000014;
+
+	staticMetaballs.list[15].position.x = -4.80224276;
+	staticMetaballs.list[15].position.y = 0.0312795155;
+	staticMetaballs.list[15].position.z = 4.59819365;
+	staticMetaballs.list[15].width = 0.299999952;
+	staticMetaballs.list[15].height = 1.60000014;
+
+	staticMetaballs.list[16].position.x = 2.76241374;
+	staticMetaballs.list[16].position.y = -0.0128028858;
+	staticMetaballs.list[16].position.z = -6.90601778;
+	staticMetaballs.list[16].width = 0.249999955;
+	staticMetaballs.list[16].height = 2.49999976;
+
+	staticMetaballs.currentIndex = 16;
+
+	return staticMetaballs;
+}

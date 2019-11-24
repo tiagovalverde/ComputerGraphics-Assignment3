@@ -25,5 +25,12 @@ typedef struct CubeMesh
 
 } CubeMesh;
 
+typedef struct CubeMeshProps {
+	float transX, transY, transZ;
+	float rotY, rotZ;
+	float scaleX, scaleY, scaleZ;
+
+} CubeMeshProps;
+
 CubeMesh newCube();
-void drawCube(CubeMesh* cube);
+void drawCube(CubeMesh* cube, CubeMeshProps* cubeProps);

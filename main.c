@@ -11,7 +11,7 @@
 #include "CubeMesh.h"
 #include "SubmarineMesh.h"
 
-const int meshSize = 16;    // Default Mesh Size
+const int meshSize = 64;    // Default Mesh Size
 const int vWidth = 650;     // Viewport width in pixels
 const int vHeight = 500;    // Viewport height in pixels
 
@@ -28,15 +28,19 @@ static GLfloat light_ambient[] = { 0.2F, 0.2F, 0.2F, 1.0F };
 
 // A quad mesh representing the ground
 static QuadMesh groundMesh;
-
+static Metaballs metaballs;
 // A mesh representing the static object on the ground
 static CubeMesh cubeMesh;
-
+static CubeMesh cubeMesh2;
+static CubeMesh cubeMesh3;
+static CubeMeshProps cubeMeshProps;
+static CubeMeshProps cubeMeshProps2;
+static CubeMeshProps cubeMeshProps3;
 /**
 * A mesh representing the submarine
 * Holds the instance of the sumbarine instance
 */
-static SubmarineMesh submarineMesh;
+static SubmarineMesh submarinePlayer;
 
 // Structure defining a bounding box, currently unused
 //struct BoundingBox {
@@ -69,17 +73,10 @@ void displayHelp();
 // utils
 double constrainAngle(double x);
 
-// submarine initial global variables
-// starting position
-float x_translate_pos = 0.0;
-float y_translate_pos = 4.0;
-float z_translate_pos = 16.0;
-// starting rotation angle
-float y_axis_rotation = 45.0;
-// propeller
-float propeller_x_axis_rotation = 0.0; // state of the propllers angle
-int propeller_timer = 1000; // defines how fast the propeller should translate
-bool isEngineOn = false; // engine state
+// initialize state
+void initStateVariables();
+
+struct SubmarineProps submarinePlayerProps;
 
 int main(int argc, char** argv)
 {
@@ -147,11 +144,23 @@ void initOpenGL(int w, int h)
 	Vector3D specular = NewVector3D(0.04f, 0.04f, 0.04f);
 	SetMaterialQM(&groundMesh, ambient, diffuse, specular, 0.2);
 
+	// set initial properties
+	initStateVariables();
+
+	computeMetaballsIntoQuadMesh(
+		metaballs.list,
+		metaballs.currentIndex,
+		&groundMesh);
+
 	// setup static mesh
+	// GROUND OBJECTS
 	cubeMesh = newCube();
+	cubeMesh2 = newCube();
+	cubeMesh3 = newCube();
 
 	// setup dynamic mesh
-	submarineMesh = newSubmarine();
+	// SUBMARINES
+	submarinePlayer = newSubmarine();
 
 	// Set up the bounding box of the scene
 	// Currently unused. You could set up bounding boxes for your objects eventually.
@@ -161,10 +170,10 @@ void initOpenGL(int w, int h)
 
 // Helper Functions to set and transform submarine
 void setSubmarineMaterialProperties() {
-	glMaterialfv(GL_FRONT, GL_AMBIENT, submarineMesh.mat_ambient);
-	glMaterialfv(GL_FRONT, GL_SPECULAR, submarineMesh.mat_specular);
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, submarineMesh.mat_diffuse);
-	glMaterialfv(GL_FRONT, GL_SHININESS, submarineMesh.mat_shininess);
+	glMaterialfv(GL_FRONT, GL_AMBIENT, submarinePlayer.mat_ambient);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, submarinePlayer.mat_specular);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, submarinePlayer.mat_diffuse);
+	glMaterialfv(GL_FRONT, GL_SHININESS, submarinePlayer.mat_shininess);
 }
 
 
@@ -173,8 +182,9 @@ void setSubmarineMaterialProperties() {
 // or glutPostRedisplay() has been called.
 void display(void)
 {
+	glShadeModel(GL_SMOOTH);
+	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	// Draw submarine
 
 	// Set submarine material properties
@@ -189,12 +199,19 @@ void display(void)
 	// translate coordinates x,y,z
 	// submarine y rotation angle
 	// propellers x rotation angle
-	drawSubmarine(x_translate_pos, y_translate_pos, z_translate_pos, y_axis_rotation, propeller_x_axis_rotation);
+	drawSubmarine(
+		submarinePlayerProps.x_translate_pos, 
+		submarinePlayerProps.y_translate_pos, 
+		submarinePlayerProps.z_translate_pos, 
+		submarinePlayerProps.y_axis_rotation, 
+		submarinePlayerProps.propeller_x_axis_rotation);
 
 	// Draw ground mesh
 	DrawMeshQM(&groundMesh, meshSize);
 	// Draw static mesh
-	drawCube(&cubeMesh);
+	drawCube(&cubeMesh, &cubeMeshProps);
+	drawCube(&cubeMesh2, &cubeMeshProps2);
+	drawCube(&cubeMesh3, &cubeMeshProps3);
 
 	glutSwapBuffers();   // Double buffering, swap buffers
 }
@@ -224,13 +241,13 @@ void keyboard(unsigned char key, int x, int y)
 	switch (key)
 	{
 	case 's':
-		if (!isEngineOn) startPropeler();
+		if (!submarinePlayerProps.isEngineOn) startPropeler();
 		break;
 	case 'f':
-		if (isEngineOn) moveSubmarine(+1);
+		if (submarinePlayerProps.isEngineOn) moveSubmarine(+1);
 		break;
 	case 'b':
-		if (isEngineOn)moveSubmarine(-1);
+		if (submarinePlayerProps.isEngineOn)moveSubmarine(-1);
 		break;
 	}
 	glutPostRedisplay();   // Trigger a window redisplay
@@ -245,16 +262,16 @@ void functionKeys(int key, int x, int y)
 		displayHelp();
 	}
 	else if (key == GLUT_KEY_DOWN) {
-		if (isEngineOn) moveDown();
+		if (submarinePlayerProps.isEngineOn) moveDown();
 	}
 	else if (key == GLUT_KEY_UP) {
-		if (isEngineOn) moveUp();
+		if (submarinePlayerProps.isEngineOn) moveUp();
 	}
 	else if (key == GLUT_KEY_RIGHT) {
-		if (isEngineOn) rotateRight();
+		if (submarinePlayerProps.isEngineOn) rotateRight();
 	}
 	else if (key == GLUT_KEY_LEFT) {
-		if (isEngineOn) rotateLeft();
+		if (submarinePlayerProps.isEngineOn) rotateLeft();
 	}
 	glutPostRedisplay();   // Trigger a window redisplay
 }
@@ -330,27 +347,27 @@ void displayHelp() {
 // moves the submaring up on user input
 // checks if submarine reached limits of the world ceiling
 void moveUp() {
-	if (y_translate_pos < 10.50) {
-		y_translate_pos += 0.10;
+	if (submarinePlayerProps.y_translate_pos < 10.50) {
+		submarinePlayerProps.y_translate_pos += 0.10;
 	}
 }
 
 // moves the submaring down on user input
 // checks if submarine reached limits of the world ground
 void moveDown() {
-	if (y_translate_pos > 0.60) {
-		y_translate_pos -= 0.10;
+	if (submarinePlayerProps.y_translate_pos > 0.60) {
+		submarinePlayerProps.y_translate_pos -= 0.10;
 	}
 }
 
 // rotates the submarine right
 void rotateRight() {
-	y_axis_rotation -= 1.0;
+	submarinePlayerProps.y_axis_rotation -= 1.0;
 }
 
 // rotates the submarine left
 void rotateLeft() {
-	y_axis_rotation += 1.0;
+	submarinePlayerProps.y_axis_rotation += 1.0;
 }
 
 /* triggers the sumarine to move fowards or backwards
@@ -358,12 +375,12 @@ void rotateLeft() {
 */
 void moveSubmarine(float direction) {
 
-	if (direction == 1) propeller_x_axis_rotation += 40.0;
-	if (direction == -1) propeller_x_axis_rotation -= 40.0;
+	if (direction == 1) submarinePlayerProps.propeller_x_axis_rotation += 40.0;
+	if (direction == -1) submarinePlayerProps.propeller_x_axis_rotation -= 40.0;
 
 	float PI = 3.14159265358979323846;
 	float CONSTANT_SPEED = 0.1; // submarine constant speed 
-	float normalzed_angle = constrainAngle(y_axis_rotation); // set angle to range btw 0deg and 360deg
+	float normalzed_angle = constrainAngle(submarinePlayerProps.y_axis_rotation); // set angle to range btw 0deg and 360deg
 	float currentRadian = normalzed_angle * (PI / 180); // transform into angle to radian
 
 	// calculate the amount of movement the submarine should take in the x and z coordinates
@@ -373,38 +390,38 @@ void moveSubmarine(float direction) {
 
 	// 0 to 90 deg direction
 	if (currentRadian > 0 && currentRadian < (PI / 2)) {
-		x_translate_pos += x_total_move;
-		z_translate_pos -= z_total_move;
+		submarinePlayerProps.x_translate_pos += x_total_move;
+		submarinePlayerProps.z_translate_pos -= z_total_move;
 	}
 	if (currentRadian == 0) {
-		x_translate_pos += x_total_move;
+		submarinePlayerProps.x_translate_pos += x_total_move;
 	}
 	if (currentRadian == (PI / 2)) {
-		z_translate_pos -= z_total_move;
+		submarinePlayerProps.z_translate_pos -= z_total_move;
 	}
 	// 90 to 180 deg direction
 	if (currentRadian > (PI / 2) && currentRadian < PI) {
-		x_translate_pos -= x_total_move;
-		z_translate_pos -= z_total_move;
+		submarinePlayerProps.x_translate_pos -= x_total_move;
+		submarinePlayerProps.z_translate_pos -= z_total_move;
 	}
 	if (currentRadian == PI) {
-		x_translate_pos += x_total_move;
+		submarinePlayerProps.x_translate_pos += x_total_move;
 	}
 	// 180 to 270 deg direction
 	if (currentRadian > PI&& currentRadian < ((3 * PI) / 2)) {
-		x_translate_pos -= x_total_move;
-		z_translate_pos += z_total_move;
+		submarinePlayerProps.x_translate_pos -= x_total_move;
+		submarinePlayerProps.z_translate_pos += z_total_move;
 	}
 	if (currentRadian == ((3 * PI) / 2)) {
-		z_translate_pos += z_total_move;
+		submarinePlayerProps.z_translate_pos += z_total_move;
 	}
 	// 270 to 360 deg direction
 	if (currentRadian > ((3 * PI) / 2) && currentRadian < (2 * PI)) {
-		x_translate_pos += x_total_move;
-		z_translate_pos += z_total_move;
+		submarinePlayerProps.x_translate_pos += x_total_move;
+		submarinePlayerProps.z_translate_pos += z_total_move;
 	}
 	if (currentRadian == (2 * PI)) {
-		x_translate_pos += x_total_move;
+		submarinePlayerProps.x_translate_pos += x_total_move;
 	}
 }
 
@@ -413,7 +430,7 @@ void moveSubmarine(float direction) {
 *  If not, the timer function to rotate the propeller is called
 */
 void startPropeler() {
-	isEngineOn = !isEngineOn;
+	submarinePlayerProps.isEngineOn = !submarinePlayerProps.isEngineOn;
 	glutTimerFunc(0, timerPropeller, 0);
 }
 
@@ -434,8 +451,63 @@ double constrainAngle(double x) {
 * presses the s keyboard to start the submarine propller
 */
 void timerPropeller(int value) {
-	propeller_x_axis_rotation += 4.0;
+	submarinePlayerProps.propeller_x_axis_rotation += 4.0;
 	glutPostRedisplay();
-	glutTimerFunc(propeller_timer / 60, timerPropeller, 0);
+	glutTimerFunc(submarinePlayerProps.propeller_timer / 60, timerPropeller, 0);
 }
 
+/////////////////////////////////////////////////////////
+// A3 Functions
+/////////////////////////////////////////////////////////
+void initStateVariables() {
+	////////////////////
+	// PLAYER SUBMARINE
+	///////////////////
+	submarinePlayerProps.x_translate_pos = 0.0;
+	submarinePlayerProps.y_translate_pos = 4.0;
+	submarinePlayerProps.z_translate_pos = 16.0;
+	submarinePlayerProps.y_axis_rotation = 45.0;
+	submarinePlayerProps.propeller_x_axis_rotation = 0.0;
+	submarinePlayerProps.propeller_timer = 1000;
+	submarinePlayerProps.isEngineOn = false;
+
+	////////////////////
+	// COM SUBMARINE
+	///////////////////
+
+	///////////////////////////
+	// METABALS ON GROUNDMESH
+	///////////////////////////
+	metaballs = initializeMetaballs();
+	
+	///////////////////////////
+	// CubeMesh (Ground Objects
+	///////////////////////////
+	cubeMeshProps.transX = 4.0;
+	cubeMeshProps.transY = 2.0;
+	cubeMeshProps.transZ = 8.0;
+	cubeMeshProps.rotY = 20.0;
+	cubeMeshProps.rotZ = 10.0;
+	cubeMeshProps.scaleX = 0.25;
+	cubeMeshProps.scaleY = 0.5;
+	cubeMeshProps.scaleZ = 0.25;
+
+	cubeMeshProps2.transX = -2.0;
+	cubeMeshProps2.transY = 0.5;
+	cubeMeshProps2.transZ = 6.0;
+	cubeMeshProps2.rotY = 20.0;
+	cubeMeshProps2.rotZ = -10.0;
+	cubeMeshProps2.scaleX = 0.5;
+	cubeMeshProps2.scaleY = 0.25;
+	cubeMeshProps2.scaleZ = 0.25;
+
+	cubeMeshProps3.transX = 1.0;
+	cubeMeshProps3.transY = -0.5;
+	cubeMeshProps3.transZ = -2.0;
+	cubeMeshProps3.rotY = 20.0;
+	cubeMeshProps3.rotZ = -10.0;
+	cubeMeshProps3.scaleX = 1.0;
+	cubeMeshProps3.scaleY = 0.50;
+	cubeMeshProps3.scaleZ = 0.25;
+	
+}

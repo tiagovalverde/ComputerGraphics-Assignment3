@@ -34,6 +34,18 @@ typedef struct
 	GLfloat mat_shininess[1];
 } QuadMesh;
 
+// represents one metaball
+struct Metaball {
+	Vector3D position;
+	float width, height;
+} Metaball;
+
+// represents list of metaballs
+typedef struct  {
+	int currentIndex;
+	struct Metaball list[20];
+} Metaballs;
+
 QuadMesh NewQuadMesh(int maxMeshSize);
 void SetMaterialQM(QuadMesh* qm, Vector3D ambient, Vector3D diffuse, Vector3D specular, double shininess);
 bool CreateMemoryQM(QuadMesh* qm);
@@ -41,3 +53,7 @@ bool InitMeshQM(QuadMesh* qm, int meshSize, Vector3D origin, double meshLength, 
 void DrawMeshQM(QuadMesh* qm, int meshSize);
 void FreeMemoryQM(QuadMesh* qm);
 void ComputeNormalsQM(QuadMesh* qm);
+
+void computeMetaballsIntoQuadMesh(struct Metaball* metaballsList, int metaballsCount, QuadMesh* qm);
+float addRandomNoise();
+Metaballs initializeMetaballs();

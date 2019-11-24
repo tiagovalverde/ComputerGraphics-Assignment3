@@ -82,7 +82,7 @@ void getBBox(CubeMesh* cube, Vector3D* min, Vector3D* max)
 	// TODO: Implement if needed
 }
 
-void drawCube(CubeMesh* cube)
+void drawCube(CubeMesh* cube, CubeMeshProps* cubeProps)
 {
 	if (cube->selected)
 	{
@@ -105,10 +105,10 @@ void drawCube(CubeMesh* cube)
 	// Transform and Draw cube   
 	glPushMatrix();
 	// put your transform code here
-	glTranslatef(4.0, 2.0, 8.0);
-	glRotatef(20, 0.0, 1.0, 0.0);
-	glRotatef(10.0, 0.0, 0.0, 1.0);
-	glScalef(0.25, 0.5, 0.25);
+	glTranslatef(cubeProps->transX, cubeProps->transY, cubeProps->transZ);
+	glRotatef(cubeProps->rotY, 0.0, 1.0, 0.0);
+	glRotatef(cubeProps->rotZ, 0.0, 0.0, 1.0);
+	glScalef(cubeProps->scaleX, cubeProps->scaleY, cubeProps->scaleZ);
 	glBegin(GL_QUADS);
 	// Back Face
 	glNormal3f(quadNormals[0][0], quadNormals[0][1], quadNormals[0][2]);
