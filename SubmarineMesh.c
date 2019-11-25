@@ -143,4 +143,23 @@ void drawSubmarine(float x_pos, float y_pos, float z_pos, float y_rot, float pro
 	glScalef(0.02, 0.45, 0.10); // define the shape of the object
 	glutSolidCube(1.0);
 	glPopMatrix();
+
+	/*************************
+	* Periscope Objects
+	*************************/
+	glPushMatrix();
+	glTranslatef(x_pos, y_pos, z_pos); // define base position
+	glRotatef(y_rot, 0.0, 1.0, 0.0); // rotate left or right
+	glTranslatef(0.20, 0.40, 0.0);
+	glScalef(0.05, 0.50, 0.05); // define the shape of the sphere to be base
+	glutSolidCube(1.0);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(x_pos, y_pos, z_pos); // define base position
+	glRotatef(y_rot, 0.0, 1.0, 0.0); // rotate left or right
+	glTranslatef(0.25, 0.625, 0.0);
+	glScalef(0.10, 0.05, 0.05); // define the shape of the sphere to be base
+	glutSolidCube(1.0);
+	glPopMatrix();
 }

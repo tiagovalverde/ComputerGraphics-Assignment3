@@ -10,6 +10,8 @@
 #include "QuadMesh.h"
 #include "CubeMesh.h"
 #include "SubmarineMesh.h"
+#include <math.h>
+
 
 const int meshSize = 64;    // Default Mesh Size
 const int vWidth = 650;     // Viewport width in pixels
@@ -40,7 +42,20 @@ static CubeMeshProps cubeMeshProps3;
 * A mesh representing the submarine
 * Holds the instance of the sumbarine instance
 */
+
 static SubmarineMesh submarinePlayer;
+struct SubmarineProps submarinePlayerProps;
+
+// Camera state
+bool periscopeView = false;
+
+typedef struct ViewState {
+	bool inPeriscopeView;
+	float posEyeX, posEyeY, posEyeZ;
+	float posToLookX, posToLookY, posToLookZ;
+	float lookY;
+} ViewState;
+struct ViewState viewState;
 
 // Structure defining a bounding box, currently unused
 //struct BoundingBox {
@@ -75,8 +90,8 @@ double constrainAngle(double x);
 
 // initialize state
 void initStateVariables();
+void updatePeriscopeView();
 
-struct SubmarineProps submarinePlayerProps;
 
 int main(int argc, char** argv)
 {
@@ -205,6 +220,8 @@ void display(void)
 		submarinePlayerProps.z_translate_pos, 
 		submarinePlayerProps.y_axis_rotation, 
 		submarinePlayerProps.propeller_x_axis_rotation);
+	updatePeriscopeView();
+
 
 	// Draw ground mesh
 	DrawMeshQM(&groundMesh, meshSize);
@@ -231,8 +248,21 @@ void reshape(int w, int h)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	// Set up the camera at position (0, 6, 22) looking at the origin, up along positive y axis
-	gluLookAt(0.0, 6.0, 22.0, 0.0, 0.0, 0.0, 0.0, 11.0, 0.0);
+	if (viewState.inPeriscopeView) {
+		gluLookAt(viewState.posEyeX,
+			viewState.posEyeY,
+			viewState.posEyeZ,
+			viewState.posToLookX,
+			viewState.posEyeY + viewState.lookY,
+			viewState.posToLookZ,
+			0.0, 1.0, 0.0);
+	}
+	else {
+		// Set up the camera at position (0, 6, 22) looking at the origin, up along positive y axis
+		gluLookAt(0.0, 6.0, 22.0, 0.0, 0.0, 0.0, 0.0, 11.0, 0.0);
+	}
+
+	
 }
 
 // Callback, handles input from the keyboard, non-arrow keys
@@ -249,7 +279,11 @@ void keyboard(unsigned char key, int x, int y)
 	case 'b':
 		if (submarinePlayerProps.isEngineOn)moveSubmarine(-1);
 		break;
+	case 'p':
+		viewState.inPeriscopeView = !viewState.inPeriscopeView;
+		break;
 	}
+	
 	glutPostRedisplay();   // Trigger a window redisplay
 }
 
@@ -460,11 +494,24 @@ void timerPropeller(int value) {
 // A3 Functions
 /////////////////////////////////////////////////////////
 void initStateVariables() {
+	/////////////////////
+	// PERISCOVE VIEW
+	////////////////////
+	viewState.inPeriscopeView = false;
+	viewState.posEyeX = 0;
+	viewState.posEyeY = 0;
+	viewState.posEyeZ = 0;
+	viewState.posToLookX = 0;
+	viewState.posToLookY = 0;
+	viewState.posToLookZ = 0;
+	viewState.lookY = 0;
+
+	
 	////////////////////
 	// PLAYER SUBMARINE
 	///////////////////
 	submarinePlayerProps.x_translate_pos = 0.0;
-	submarinePlayerProps.y_translate_pos = 4.0;
+	submarinePlayerProps.y_translate_pos = 1.0;
 	submarinePlayerProps.z_translate_pos = 16.0;
 	submarinePlayerProps.y_axis_rotation = 45.0;
 	submarinePlayerProps.propeller_x_axis_rotation = 0.0;
@@ -510,4 +557,24 @@ void initStateVariables() {
 	cubeMeshProps3.scaleY = 0.50;
 	cubeMeshProps3.scaleZ = 0.25;
 	
+}
+
+void updatePeriscopeView() {
+   float PI = 3.14159265358979323846;
+   float DegToRad = (PI / 180);
+
+	viewState.posEyeX = submarinePlayerProps.x_translate_pos - (2 * (cos(submarinePlayerProps.y_axis_rotation * DegToRad)));
+	viewState.posEyeY = submarinePlayerProps.y_translate_pos + 5;
+	viewState.posEyeZ = submarinePlayerProps.z_translate_pos + (2 * (sin(submarinePlayerProps.y_axis_rotation * DegToRad)));
+	//pEyeX = translatedX - (2 * (cos(rotated * DTR)));
+	//pEyeY = translatedY + 5;
+	//pEyeZ = translatedZ + (2 * (sin(rotated * DTR)));
+
+	viewState.posToLookX = viewState.posEyeX - ((cos(submarinePlayerProps.y_axis_rotation * DegToRad)) * 5);
+	viewState.posToLookY = viewState.posEyeY - 1;
+	viewState.posToLookZ = viewState.posEyeZ + ((sin(submarinePlayerProps.y_axis_rotation * DegToRad)) * 5);
+
+	//centerX = pEyeX - ((cos(rotated * DTR)) * 5);
+	//centerY = pEyeY - 1;
+	//centerZ = pEyeZ + ((sin(rotated * DTR)) * 5);
 }
