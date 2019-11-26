@@ -47,7 +47,7 @@ static SubmarineMesh submarinePlayer;
 struct SubmarineProps submarinePlayerProps;
 
 // Camera state
-bool periscopeView = false;
+bool periscopeView = false; 
 
 typedef struct ViewState {
 	bool inPeriscopeView;
@@ -91,13 +91,14 @@ double constrainAngle(double x);
 // initialize state
 void initStateVariables();
 void updatePeriscopeView();
+void updatePeriscopeViewDirection(float y_rotated);
 
 
 int main(int argc, char** argv)
 {
 	// Initialize GLUT
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+	glutInit(&argc, argv); 
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);  
 	glutInitWindowSize(vWidth, vHeight);
 	glutInitWindowPosition(200, 30);
 	glutCreateWindow("Assignment 3");
@@ -128,7 +129,7 @@ void initOpenGL(int w, int h)
 	// Set up and enable lighting
 	glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular); 
 	glLightfv(GL_LIGHT1, GL_AMBIENT, light_ambient);
 	glLightfv(GL_LIGHT1, GL_DIFFUSE, light_diffuse);
 	glLightfv(GL_LIGHT1, GL_SPECULAR, light_specular);
@@ -186,9 +187,9 @@ void initOpenGL(int w, int h)
 // Helper Functions to set and transform submarine
 void setSubmarineMaterialProperties() {
 	glMaterialfv(GL_FRONT, GL_AMBIENT, submarinePlayer.mat_ambient);
-	glMaterialfv(GL_FRONT, GL_SPECULAR, submarinePlayer.mat_specular);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, submarinePlayer.mat_specular); 
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, submarinePlayer.mat_diffuse);
-	glMaterialfv(GL_FRONT, GL_SHININESS, submarinePlayer.mat_shininess);
+	glMaterialfv(GL_FRONT, GL_SHININESS, submarinePlayer.mat_shininess); 
 }
 
 
@@ -197,9 +198,29 @@ void setSubmarineMaterialProperties() {
 // or glutPostRedisplay() has been called.
 void display(void)
 {
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+
 	glShadeModel(GL_SMOOTH);
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glLoadIdentity();
+
+
+	if (viewState.inPeriscopeView) {
+		printf("periscope view\n");
+		gluLookAt(
+			viewState.posEyeX, viewState.posEyeY, viewState.posEyeZ,
+			viewState.posToLookX, 
+			viewState.posToLookY,
+			viewState.posToLookZ,
+			0.0, 1.0, 0.0);
+	}
+	else {
+		printf("periscope view\n");
+		// Set up the camera at position (0, 6, 22) looking at the origin, up along positive y axis
+		gluLookAt(0.0, 6.0, 22.0, 0.0, 0.0, 0.0, 0.0, 11.0, 0.0);
+	}
 	// Draw submarine
 
 	// Set submarine material properties
@@ -220,7 +241,7 @@ void display(void)
 		submarinePlayerProps.z_translate_pos, 
 		submarinePlayerProps.y_axis_rotation, 
 		submarinePlayerProps.propeller_x_axis_rotation);
-	updatePeriscopeView();
+	//updatePeriscopeView();
 
 
 	// Draw ground mesh
@@ -248,20 +269,6 @@ void reshape(int w, int h)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	if (viewState.inPeriscopeView) {
-		gluLookAt(viewState.posEyeX,
-			viewState.posEyeY,
-			viewState.posEyeZ,
-			viewState.posToLookX,
-			viewState.posEyeY + viewState.lookY,
-			viewState.posToLookZ,
-			0.0, 1.0, 0.0);
-	}
-	else {
-		// Set up the camera at position (0, 6, 22) looking at the origin, up along positive y axis
-		gluLookAt(0.0, 6.0, 22.0, 0.0, 0.0, 0.0, 0.0, 11.0, 0.0);
-	}
-
 	
 }
 
@@ -274,12 +281,16 @@ void keyboard(unsigned char key, int x, int y)
 		if (!submarinePlayerProps.isEngineOn) startPropeler();
 		break;
 	case 'f':
-		if (submarinePlayerProps.isEngineOn) moveSubmarine(+1);
+		if (submarinePlayerProps.isEngineOn) {
+			moveSubmarine(+1);
+
+		}
 		break;
 	case 'b':
 		if (submarinePlayerProps.isEngineOn)moveSubmarine(-1);
 		break;
 	case 'p':
+		//printf("camera view toggled");
 		viewState.inPeriscopeView = !viewState.inPeriscopeView;
 		break;
 	}
@@ -383,6 +394,7 @@ void displayHelp() {
 void moveUp() {
 	if (submarinePlayerProps.y_translate_pos < 10.50) {
 		submarinePlayerProps.y_translate_pos += 0.10;
+		updatePeriscopeView();
 	}
 }
 
@@ -391,17 +403,23 @@ void moveUp() {
 void moveDown() {
 	if (submarinePlayerProps.y_translate_pos > 0.60) {
 		submarinePlayerProps.y_translate_pos -= 0.10;
+		updatePeriscopeView();
 	}
 }
 
 // rotates the submarine right
 void rotateRight() {
 	submarinePlayerProps.y_axis_rotation -= 1.0;
+	updatePeriscopeView();
+	updatePeriscopeViewDirection(-1.0);
 }
 
 // rotates the submarine left
 void rotateLeft() {
 	submarinePlayerProps.y_axis_rotation += 1.0;
+
+	updatePeriscopeView();
+	updatePeriscopeViewDirection(+1.0);
 }
 
 /* triggers the sumarine to move fowards or backwards
@@ -411,6 +429,7 @@ void moveSubmarine(float direction) {
 
 	if (direction == 1) submarinePlayerProps.propeller_x_axis_rotation += 40.0;
 	if (direction == -1) submarinePlayerProps.propeller_x_axis_rotation -= 40.0;
+
 
 	float PI = 3.14159265358979323846;
 	float CONSTANT_SPEED = 0.1; // submarine constant speed 
@@ -457,6 +476,10 @@ void moveSubmarine(float direction) {
 	if (currentRadian == (2 * PI)) {
 		submarinePlayerProps.x_translate_pos += x_total_move;
 	}
+
+	// after x,y,z submarine updated, update persicope camera.
+	updatePeriscopeView();
+
 }
 
 
@@ -494,18 +517,6 @@ void timerPropeller(int value) {
 // A3 Functions
 /////////////////////////////////////////////////////////
 void initStateVariables() {
-	/////////////////////
-	// PERISCOVE VIEW
-	////////////////////
-	viewState.inPeriscopeView = false;
-	viewState.posEyeX = 0;
-	viewState.posEyeY = 0;
-	viewState.posEyeZ = 0;
-	viewState.posToLookX = 0;
-	viewState.posToLookY = 0;
-	viewState.posToLookZ = 0;
-	viewState.lookY = 0;
-
 	
 	////////////////////
 	// PLAYER SUBMARINE
@@ -513,10 +524,28 @@ void initStateVariables() {
 	submarinePlayerProps.x_translate_pos = 0.0;
 	submarinePlayerProps.y_translate_pos = 1.0;
 	submarinePlayerProps.z_translate_pos = 16.0;
-	submarinePlayerProps.y_axis_rotation = 45.0;
+	submarinePlayerProps.y_axis_rotation = 90.0;
 	submarinePlayerProps.propeller_x_axis_rotation = 0.0;
 	submarinePlayerProps.propeller_timer = 1000;
 	submarinePlayerProps.isEngineOn = false;
+
+	/////////////////////
+	// PERISCOVE VIEW
+	////////////////////
+	float PI = 3.14159265358979323846;
+	float DegToRad = (PI / 180);
+
+	viewState.inPeriscopeView = false;
+
+	viewState.posEyeX = submarinePlayerProps.x_translate_pos;
+	viewState.posEyeY = submarinePlayerProps.y_translate_pos + 0.625;
+	viewState.posEyeZ = submarinePlayerProps.z_translate_pos - 1.0;
+	
+	viewState.posToLookX = submarinePlayerProps.x_translate_pos;
+	viewState.posToLookY = (submarinePlayerProps.y_translate_pos + 0.625) - 1.0;
+	viewState.posToLookZ = (submarinePlayerProps.z_translate_pos - 1.0) - 2.0;
+
+	viewState.lookY = 0;
 
 	////////////////////
 	// COM SUBMARINE
@@ -560,21 +589,62 @@ void initStateVariables() {
 }
 
 void updatePeriscopeView() {
-   float PI = 3.14159265358979323846;
-   float DegToRad = (PI / 180);
-
+   
+   /*
 	viewState.posEyeX = submarinePlayerProps.x_translate_pos - (2 * (cos(submarinePlayerProps.y_axis_rotation * DegToRad)));
 	viewState.posEyeY = submarinePlayerProps.y_translate_pos + 5;
 	viewState.posEyeZ = submarinePlayerProps.z_translate_pos + (2 * (sin(submarinePlayerProps.y_axis_rotation * DegToRad)));
-	//pEyeX = translatedX - (2 * (cos(rotated * DTR)));
-	//pEyeY = translatedY + 5;
-	//pEyeZ = translatedZ + (2 * (sin(rotated * DTR)));
-
 	viewState.posToLookX = viewState.posEyeX - ((cos(submarinePlayerProps.y_axis_rotation * DegToRad)) * 5);
 	viewState.posToLookY = viewState.posEyeY - 1;
 	viewState.posToLookZ = viewState.posEyeZ + ((sin(submarinePlayerProps.y_axis_rotation * DegToRad)) * 5);
+	*/
+	float PI = 3.14159265358979323846;
+	float DegToRad = (PI / 180);
 
-	//centerX = pEyeX - ((cos(rotated * DTR)) * 5);
-	//centerY = pEyeY - 1;
-	//centerZ = pEyeZ + ((sin(rotated * DTR)) * 5);
+   viewState.posEyeX = submarinePlayerProps.x_translate_pos;
+   viewState.posEyeY = submarinePlayerProps.y_translate_pos + 0.625;
+   viewState.posEyeZ = submarinePlayerProps.z_translate_pos - 1.0;
+
+   
+   viewState.posToLookX = submarinePlayerProps.x_translate_pos;
+   viewState.posToLookY = (submarinePlayerProps.y_translate_pos + 0.625) - 1.0;
+   viewState.posToLookZ = (submarinePlayerProps.z_translate_pos - 1.0) - 2.0;
+
+}
+
+void updatePeriscopeViewDirection(float y_rotated) {
+
+	/////////////////////////////////////////////
+///////////////////////////////////////////////
+	float PI = 3.14159265358979323846;
+	float DegToRad = (PI / 180);
+	float normalzed_angle = constrainAngle(submarinePlayerProps.y_axis_rotation); // set angle to range btw 0deg and 360deg
+	float currentRadian = normalzed_angle * (PI / 180); // transform into angle to radian
+	float CONSTANT_SPEED = 0.1; // submarine constant speed 
+	float x_total_move = (fabs(cos(currentRadian) * CONSTANT_SPEED));
+	float z_total_move = (fabs(sin(currentRadian) * CONSTANT_SPEED));
+
+	//float x_total_move = (fabs(cos(currentRadian) * CONSTANT_SPEED)) * direction;
+	//float z_total_move = (fabs(sin(currentRadian) * CONSTANT_SPEED)) * direction;
+
+	viewState.posToLookX = submarinePlayerProps.x_translate_pos * cos(currentRadian) * (viewState.posToLookX - submarinePlayerProps.x_translate_pos);
+	viewState.posToLookZ = (submarinePlayerProps.z_translate_pos - 1.0) + sin(currentRadian) * (viewState.posToLookZ - submarinePlayerProps.z_translate_pos);
+	
+		//x1 = x + cos(ang) * distance;
+		//y1 = y + sin(ang) * distance;
+		//the simplest way in 2D is to take angle 'ang', 
+		// and distance 'd', and your starting point 'x' and 'y':
+
+
+	// The overall computation should be center = eye + Rot(center - eye).
+
+
+
+
+
+
+
+
+
+
 }

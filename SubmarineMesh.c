@@ -48,6 +48,7 @@ void drawSubmarine(float x_pos, float y_pos, float z_pos, float y_rot, float pro
 	glutSolidSphere(1, 50, 50);
 	glPopMatrix();
 
+
 	// Top of the submarine block (central room)
 	glPushMatrix();
 	glTranslatef(x_pos, y_pos, z_pos); // define base position
