@@ -54,7 +54,7 @@ typedef struct ViewState {
 	bool inPeriscopeView;
 	float posEyeX, posEyeY, posEyeZ;
 	float posToLookX, posToLookY, posToLookZ;
-	float lookY;
+	float zoom;
 } ViewState;
 struct ViewState viewState;
 
@@ -69,6 +69,9 @@ typedef struct BoundingBox {
 typedef struct Torpedo {
 	float speed;
 	float radius;
+	float t_x_pos, t_y_pos, t_z_pos;
+	float y_rotation;
+	bool fired;
 } Torpedo;
 struct Torpedo torpedo;
 
@@ -103,6 +106,7 @@ double constrainAngle(double x);
 void initStateVariables();
 void updatePeriscopeView();
 float toRadians(float rotation);
+void fireTorpedo();
 
 int main(int argc, char** argv)
 {
@@ -253,7 +257,6 @@ void display(void)
 		submarinePlayerProps.propeller_x_axis_rotation);
 
 
-
 	// Draw ground mesh
 	DrawMeshQM(&groundMesh, meshSize);
 	// Draw static mesh
@@ -293,19 +296,40 @@ void keyboard(unsigned char key, int x, int y)
 	case 'f':
 		if (submarinePlayerProps.isEngineOn) {
 			moveSubmarine(+1);
-
 		}
 		break;
 	case 'b':
 		if (submarinePlayerProps.isEngineOn)moveSubmarine(-1);
 		break;
 	case 'p':
-		//printf("camera view toggled");
 		viewState.inPeriscopeView = !viewState.inPeriscopeView;
+		break;
+	case 'o':
+		viewState.zoom += 2.0;
+		break;
+	case 'i':
+		viewState.zoom -= 2.0;
+		break;
+	case 'q':
+		fireTorpedo();
 		break;
 	}
 	
 	glutPostRedisplay();   // Trigger a window redisplay
+}
+
+void fireTorpedo() {
+
+	// add loop countdown perhaps 
+
+	//subX = translatedX;
+	//subY = translatedY + 3.0;
+	//subZ = translatedZ;
+	//subR = rotated;
+
+	//subX -= (cos(subR * DTR)) / (20 / 5) * torpedoSpeed;
+	//subZ += (sin(subR * DTR)) / (20 / 5) * torpedoSpeed;
+
 }
 
 // Callback, handles input from the keyboard, function and arrow keys
@@ -395,6 +419,10 @@ void displayHelp() {
 	printf("'right'	arrow key:	rotate the submarine right \n");
 	printf("'up'	arrow key:	move the submarine upwards \n");
 	printf("'down'	arrow key:	move the submarine downwards \n");
+	printf("------------------------------------------------------\n");
+	printf("'p':	toggle between main view and periscope view \n");
+	printf("'o':	zoom in periscope \n");
+	printf("'i':	zoom out periscope \n");
 	printf("======================================================\n");
 
 }
@@ -552,7 +580,18 @@ void initStateVariables() {
 	viewState.posToLookY = (submarinePlayerProps.y_translate_pos + 0.625);
 	viewState.posToLookZ = submarinePlayerProps.z_translate_pos;
 
-	viewState.lookY = 0;
+	viewState.zoom = 0.0;
+
+	////////////////////
+	// TORPEDO
+	////////////////////
+	torpedo.speed;
+	torpedo.radius = 0.05;
+	torpedo.t_x_pos = submarinePlayerProps.x_translate_pos + 2.0;
+	torpedo.t_y_pos = submarinePlayerProps.y_translate_pos;
+	torpedo.t_z_pos = submarinePlayerProps.z_translate_pos;
+	torpedo.y_rotation = submarinePlayerProps.y_axis_rotation;
+	torpedo.fired  = false;
 
 	////////////////////
 	// COM SUBMARINE
@@ -601,7 +640,7 @@ void updatePeriscopeView() {
 
 	viewState.posEyeX = (submarinePlayerProps.x_translate_pos) + (1*(cos(submarinePlayerProps.y_axis_rotation * DegToRad)));
 	viewState.posEyeY = submarinePlayerProps.y_translate_pos + 0.625;
-	viewState.posEyeZ = submarinePlayerProps.z_translate_pos - (1*(sin(submarinePlayerProps.y_axis_rotation * DegToRad)));
+	viewState.posEyeZ = (submarinePlayerProps.z_translate_pos) - (1*(sin(submarinePlayerProps.y_axis_rotation * DegToRad)));
 
 	viewState.posToLookX = viewState.posEyeX + ((cos(submarinePlayerProps.y_axis_rotation * DegToRad)) * 5);
 	viewState.posToLookY = viewState.posEyeY - 1;
