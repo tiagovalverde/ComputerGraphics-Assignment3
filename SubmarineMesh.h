@@ -35,5 +35,4 @@ struct SubmarineProps {
 	bool isEngineOn; // engine state
 } SubmarineProps;
 
-void drawTorpedo(float x_pos, float y_pos, float z_pos, float radius, float x_pos_moved);
-//submarinePlayerProps
+void drawTorpedo(float x_pos, float y_pos, float z_pos, float radius);

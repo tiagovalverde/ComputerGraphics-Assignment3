@@ -164,15 +164,16 @@ void drawSubmarine(float x_pos, float y_pos, float z_pos, float y_rot, float pro
 	glutSolidCube(1.0);
 	glPopMatrix();
 
-	drawTorpedo(x_pos, y_pos, z_pos,  0.050);
+	//drawTorpedo(x_pos, y_pos, z_pos,  0.050, 1.0);
 }
 
-void drawTorpedo(float x_pos, float y_pos, float z_pos, float radius, float x_pos_moved) {
+void drawTorpedo(float x_pos, float y_pos, float z_pos, float radius) {
 
 	glPushMatrix();
-	glTranslatef(x_pos + x_pos_moved, y_pos, z_pos);
+	glTranslatef(x_pos , y_pos, z_pos);
+	//glRotatef(y_rot, 0.0, 1.0, 0.0);
 	glRotatef(45.0, 0.0, 0.0, 0.0);
-	glScalef(3.0, 1.0, 1.0);
+	glScalef(1.0, 1.0, 1.0);
 	glutSolidSphere(radius, 20, 20);
 	glPopMatrix();
 }

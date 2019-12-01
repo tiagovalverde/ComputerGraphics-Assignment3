@@ -17,6 +17,7 @@
 const int meshSize = 64;    // Default Mesh Size
 const int vWidth = 650;     // Viewport width in pixels
 const int vHeight = 500;    // Viewport height in pixels
+static float PI = 3.14159265358979323846;
 
 static int currentButton;
 static unsigned char currentKey;
@@ -74,6 +75,7 @@ typedef struct Torpedo {
 	bool fired;
 } Torpedo;
 struct Torpedo torpedo;
+int counter = 0;
 
 BoundingBox torpedoBB;
 
@@ -106,13 +108,15 @@ double constrainAngle(double x);
 void initStateVariables();
 void updatePeriscopeView();
 float toRadians(float rotation);
+void updateTorpedo();
 void fireTorpedo();
+float degToRad();
 
 int main(int argc, char** argv)
 {
 	// Initialize GLUT
 	glutInit(&argc, argv); 
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH); 
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);  
 	glutInitWindowSize(vWidth, vHeight);
 	glutInitWindowPosition(200, 30);
 	glutCreateWindow("Assignment 3");
@@ -130,6 +134,8 @@ int main(int argc, char** argv)
 
 	glutSpecialFunc(functionKeys);
 
+	glutTimerFunc(35, fireTorpedo, 0);
+
 	// Start event loop, never returns
 	glutMainLoop();
 
@@ -146,7 +152,7 @@ void initOpenGL(int w, int h)
 	glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular); 
 	glLightfv(GL_LIGHT1, GL_AMBIENT, light_ambient);
 	glLightfv(GL_LIGHT1, GL_DIFFUSE, light_diffuse);
-	glLightfv(GL_LIGHT1, GL_SPECULAR, light_specular);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, light_specular); 
 
 	glLightfv(GL_LIGHT0, GL_POSITION, light_position0);
 	glLightfv(GL_LIGHT1, GL_POSITION, light_position1);
@@ -203,7 +209,7 @@ void setSubmarineMaterialProperties() {
 	glMaterialfv(GL_FRONT, GL_AMBIENT, submarinePlayer.mat_ambient);
 	glMaterialfv(GL_FRONT, GL_SPECULAR, submarinePlayer.mat_specular); 
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, submarinePlayer.mat_diffuse);
-	glMaterialfv(GL_FRONT, GL_SHININESS, submarinePlayer.mat_shininess); 
+	glMaterialfv(GL_FRONT, GL_SHININESS, submarinePlayer.mat_shininess);  
 }
 
 
@@ -213,16 +219,11 @@ void setSubmarineMaterialProperties() {
 void display(void)
 {
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-
 	glShadeModel(GL_SMOOTH);
-	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 
-
 	if (viewState.inPeriscopeView) {
-		printf("periscope view\n");
 		gluLookAt(
 			viewState.posEyeX, viewState.posEyeY, viewState.posEyeZ,
 			viewState.posToLookX, 
@@ -231,7 +232,6 @@ void display(void)
 			0.0, 1.0, 0.0);
 	}
 	else {
-		printf("periscope view\n");
 		// Set up the camera at position (0, 6, 22) looking at the origin, up along positive y axis
 		gluLookAt(0.0, 6.0, 15.0, 0.0, 0.0, 0.0, 0.0, 11.0, 0.0);
 	}
@@ -239,11 +239,6 @@ void display(void)
 
 	// Set submarine material properties
 	setSubmarineMaterialProperties();
-
-	// Apply transformations to move submarine
-	// ...
-
-	// Apply transformations to construct submarine, modify this!
 
 	// SubmarineMesh function that redraws the submarine according to the:
 	// translate coordinates x,y,z
@@ -256,6 +251,19 @@ void display(void)
 		submarinePlayerProps.y_axis_rotation, 
 		submarinePlayerProps.propeller_x_axis_rotation);
 
+	//drawTorpedo(submarinePlayerProps.x_translate_pos,
+	//	submarinePlayerProps.y_translate_pos,
+	//	submarinePlayerProps.z_translate_pos, 0.050, 1.0);
+
+	if (counter > 0) {
+		drawTorpedo(
+			torpedo.t_x_pos, 
+			torpedo.t_y_pos, 
+			torpedo.t_z_pos, 
+			torpedo.radius
+		);
+
+	}
 
 	// Draw ground mesh
 	DrawMeshQM(&groundMesh, meshSize);
@@ -311,26 +319,21 @@ void keyboard(unsigned char key, int x, int y)
 		viewState.zoom -= 2.0;
 		break;
 	case 'q':
-		fireTorpedo();
+
+		torpedo.t_x_pos = submarinePlayerProps.x_translate_pos;
+		torpedo.t_y_pos = submarinePlayerProps.y_translate_pos;
+		torpedo.t_z_pos = submarinePlayerProps.z_translate_pos;
+		torpedo.y_rotation = submarinePlayerProps.y_axis_rotation;
+
+		counter = 20;
+
 		break;
 	}
 	
 	glutPostRedisplay();   // Trigger a window redisplay
 }
 
-void fireTorpedo() {
 
-	// add loop countdown perhaps 
-
-	//subX = translatedX;
-	//subY = translatedY + 3.0;
-	//subZ = translatedZ;
-	//subR = rotated;
-
-	//subX -= (cos(subR * DTR)) / (20 / 5) * torpedoSpeed;
-	//subZ += (sin(subR * DTR)) / (20 / 5) * torpedoSpeed;
-
-}
 
 // Callback, handles input from the keyboard, function and arrow keys
 void functionKeys(int key, int x, int y)
@@ -441,7 +444,7 @@ void moveUp() {
 void moveDown() {
 	if (submarinePlayerProps.y_translate_pos > 0.60) {
 		submarinePlayerProps.y_translate_pos -= 0.10;
-		updatePeriscopeView();
+		updatePeriscopeView();	
 	}
 }
 
@@ -514,7 +517,6 @@ void moveSubmarine(float direction) {
 
 	// after x,y,z submarine updated, update persicope camera.
 	updatePeriscopeView();
-
 }
 
 
@@ -567,8 +569,7 @@ void initStateVariables() {
 	/////////////////////
 	// PERISCOVE VIEW
 	////////////////////
-	float PI = 3.14159265358979323846;
-	float DegToRad = (PI / 180);
+	float DegToRad = degToRad();
 
 	viewState.inPeriscopeView = false;
 
@@ -585,12 +586,21 @@ void initStateVariables() {
 	////////////////////
 	// TORPEDO
 	////////////////////
-	torpedo.speed;
-	torpedo.radius = 0.05;
+	torpedo.speed = 7;
+	torpedo.radius = 0.2;
+
+	/*
 	torpedo.t_x_pos = submarinePlayerProps.x_translate_pos + 2.0;
 	torpedo.t_y_pos = submarinePlayerProps.y_translate_pos;
 	torpedo.t_z_pos = submarinePlayerProps.z_translate_pos;
 	torpedo.y_rotation = submarinePlayerProps.y_axis_rotation;
+	*/
+	
+	torpedo.t_x_pos = 0.0;
+	torpedo.t_y_pos = 0.0;
+	torpedo.t_z_pos = 0.0;
+	torpedo.y_rotation = 0.0;
+
 	torpedo.fired  = false;
 
 	////////////////////
@@ -635,8 +645,8 @@ void initStateVariables() {
 }
 
 void updatePeriscopeView() {
-	float PI = 3.14159265358979323846;
-	float DegToRad = (PI / 180);
+	
+	float DegToRad = degToRad();
 
 	viewState.posEyeX = (submarinePlayerProps.x_translate_pos) + (1*(cos(submarinePlayerProps.y_axis_rotation * DegToRad)));
 	viewState.posEyeY = submarinePlayerProps.y_translate_pos + 0.625;
@@ -648,7 +658,47 @@ void updatePeriscopeView() {
 
 }
 
+void updateTorpedo() {
+
+	torpedo.t_x_pos = submarinePlayerProps.x_translate_pos +
+		(cosf((submarinePlayerProps.y_axis_rotation) * degToRad())) / (20 / 5) * torpedo.speed;
+	
+	torpedo.t_z_pos = submarinePlayerProps.z_translate_pos -
+		(sinf(submarinePlayerProps.y_axis_rotation * degToRad())) / (20 / 5) * torpedo.speed;
+	torpedo.t_y_pos = submarinePlayerProps.y_translate_pos;
+
+}
+
+void fireTorpedo() {
+	
+
+	if(counter > 0) {
+
+		torpedo.radius = 0.2;
+
+		torpedo.t_x_pos +=
+			(cosf((submarinePlayerProps.y_axis_rotation) * degToRad())) / (20 / 5) * torpedo.speed;
+
+		torpedo.t_z_pos -=
+			(sinf(submarinePlayerProps.y_axis_rotation * degToRad())) / (20 / 5) * torpedo.speed;
+
+
+		
+		counter--;
+		
+	}
+	else {
+		torpedo.radius = 0.0;
+	}
+
+	glutPostRedisplay();
+	glutTimerFunc(35, fireTorpedo, 0);
+	
+}
+
 float toRadians(float rotation) {
 	float PI = 3.14159265358979323846;
 	return (rotation * PI) / 180;
 }
+
+float degToRad() { return (PI / 180); }
