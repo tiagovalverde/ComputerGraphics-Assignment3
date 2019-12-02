@@ -17,6 +17,7 @@ typedef struct SubmarineMesh
 } SubmarineMesh;
 
 SubmarineMesh newSubmarine();
+
 void drawSubmarine(
 	float x_pos, float y_pos,
 	float z_pos, float y_rot,
@@ -33,6 +34,7 @@ struct SubmarineProps {
 	float propeller_x_axis_rotation;// state of the propllers angle
 	int propeller_timer; // defines how fast the propeller should translate
 	bool isEngineOn; // engine state
+	int NPC_movingStage;
 } SubmarineProps;
 
 void drawTorpedo(float x_pos, float y_pos, float z_pos, float radius);

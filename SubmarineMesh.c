@@ -23,11 +23,6 @@ SubmarineMesh newSubmarine() {
 
 	submarineMesh.mat_shininess[0] = submarine_mat_shininess[0];
 
-	// custom submarine properties
-
-
-
-
 	return submarineMesh;
 }
 
